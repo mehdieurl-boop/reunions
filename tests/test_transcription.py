@@ -152,6 +152,74 @@ with tempfile.TemporaryDirectory() as tmp:
     check("tableaux présents dans le Word", len(doc.tables) >= 2, f"({len(doc.tables)})")
 
 # --------------------------------------------------------------------------- #
+#  Rapport JSON de nettoyage (contrat figé avec Verbatim, issue #1)
+# --------------------------------------------------------------------------- #
+
+from audiotool import rapport  # noqa: E402
+from audiotool.pipeline import PRESETS  # noqa: E402
+
+
+class _Ana:                                   # analyse factice
+    channels, duration = 2, 90.0
+    noise_floor_db, speech_level_db, hum_hz = -45.0, -20.0, 50.0
+
+
+def _rapport(**kw):
+    st = Settings(**kw)
+    return rapport.construire(
+        source="/chemin/prive/de/mehdi/reunion.m4a",
+        sortie="/chemin/prive/reunion_transcription.wav",
+        settings=st, ana=_Ana(), presets=PRESETS, version="9.9.9",
+        duree_source_s=90.0, duree_sortie_s=90.005,
+        format_audio=dict(codec="pcm_s16le", profondeur_bits=16,
+                          frequence_hz=16000, canaux=1),
+        plancher_apres_dbfs=-59.3, sonie_lufs=-20.0, gain_db=6.6,
+        sortie_segmentee=bool(st.segment_minutes))
+
+
+r = _rapport()
+attendus = {"schema_version", "outil", "outil_version", "preset", "fichier_source_nom",
+            "fichier_sortie_nom", "duree_source_s", "duree_sortie_s", "ecart_duree_ms",
+            "retard_estime_ms", "horodatages_preserves", "trim_silence", "segment_minutes",
+            "format_audio", "avertissements"}
+check("rapport : champs du contrat présents", attendus <= set(r), f"({sorted(attendus - set(r))})")
+check("rapport : version de schéma", r["schema_version"] == "1.0")
+check("rapport : noms de fichiers sans chemin",
+      r["fichier_source_nom"] == "reunion.m4a" and "/" not in r["fichier_sortie_nom"],
+      f"({r['fichier_source_nom']!r})")
+check("rapport : aucun chemin absolu nulle part",
+      "/chemin" not in json.dumps(r, ensure_ascii=False))
+check("rapport : écart de durée en millisecondes", r["ecart_duree_ms"] == 5.0,
+      f"({r['ecart_duree_ms']})")
+check("rapport : préréglage reconnu", r["preset"] == "zoom_standard", f"({r['preset']})")
+check("rapport : préréglage absent si réglages modifiés",
+      _rapport(denoise=63)["preset"] is None)
+
+codes = lambda rr: {a["code"] for a in rr["avertissements"]}
+check("avertissement : aucun sur des réglages sains", codes(r) == set(), f"({codes(r)})")
+check("avertissement : débruitage élevé", "DENOISE_ELEVE" in codes(_rapport(denoise=90)))
+rt = _rapport(trim_silence=True)
+check("avertissement : silences raccourcis",
+      {"SILENCES_RACCOURCIS", "CHRONOLOGIE_MODIFIEE"} <= codes(rt))
+check("rapport : horodatages signalés non préservés", rt["horodatages_preserves"] is False)
+check("avertissement : fichier segmenté",
+      "FICHIER_SEGMENTE" in codes(_rapport(segment_minutes=20)))
+
+
+class _AnaFaible(_Ana):
+    noise_floor_db, speech_level_db = -30.0, -22.0        # 8 dB d'écart
+
+
+rf = rapport.construire(
+    source="a.m4a", sortie="a_transcription.wav", settings=Settings(), ana=_AnaFaible(),
+    presets=PRESETS, version="9.9.9", duree_source_s=1.0, duree_sortie_s=1.0,
+    format_audio=dict(canaux=1), plancher_apres_dbfs=None, sonie_lufs=-20.0, gain_db=0.0)
+check("avertissement : voix faible", "VOIX_FAIBLE" in {a["code"] for a in rf["avertissements"]})
+check("rapport : niveaux structurés (code/niveau/message)",
+      all({"code", "niveau", "message"} == set(a) for a in rf["avertissements"]))
+
+
+# --------------------------------------------------------------------------- #
 #  Vérification du moteur (autotest)
 # --------------------------------------------------------------------------- #
 

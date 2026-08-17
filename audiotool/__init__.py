@@ -1,7 +1,7 @@
 """Nettoyage audio et transcription de réunions, en local."""
 import sys
 
-__version__ = "1.1.1"
+__version__ = "1.3.0"
 
 
 def console_utf8() -> None:

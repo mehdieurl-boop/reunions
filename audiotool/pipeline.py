@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from scipy import ndimage
 
-from . import dsp, ffmpeg_io
+from . import __version__, dsp, ffmpeg_io, rapport as rapport_mod
 
 SR = 48_000              # fréquence de travail interne
 CHUNK = 30 * SR          # blocs de 30 s
@@ -199,6 +199,7 @@ def process_file(path: str, out_dir: str, settings: Settings, progress=None,
     prog(0.2, "Nettoyage…")
     left = np.zeros((0, nch), dtype=np.float32)
     buf = np.zeros((0, nch), dtype=np.float32)
+    rms_sortie: list[np.ndarray] = []      # pour mesurer le plancher de bruit obtenu
     total = max(ana.duration * SR, 1)
     emitted = 0
     stream = ffmpeg_io.decode_stream(path, SR, nch)
@@ -210,6 +211,12 @@ def process_file(path: str, out_dir: str, settings: Settings, progress=None,
         y = process_segment(seg, settings, ana, eq_sos)
         core = y[len(left):len(left) + core_len]
         writer.write(core)
+        w50 = int(0.05 * SR)                # même fenêtre que l'analyse d'entrée
+        mono_core = core.mean(axis=1) if core.ndim > 1 else core
+        n50 = (len(mono_core) // w50) * w50
+        if n50:
+            rms_sortie.append(np.sqrt(np.mean(
+                mono_core[:n50].reshape(-1, w50) ** 2, axis=1)).astype(np.float32))
         meter.push(core)
         if nch > 1:
             meter_mono.push(core.mean(axis=1))
@@ -251,6 +258,28 @@ def process_file(path: str, out_dir: str, settings: Settings, progress=None,
             tmp.name, str(dest), gain, mono=True, sr=16000, codec="pcm_s16le",
             ceiling_db=-1.0, trim_silence=settings.trim_silence,
             segment_minutes=settings.segment_minutes)]
+
+    # --- rapport JSON pour l'outil de transcription en aval ---------------- #
+    wav = next((o["path"] for o in outputs if o["kind"] == "transcribe"), None)
+    if wav:
+        r = np.concatenate(rms_sortie) if rms_sortie else np.array([1e-4], np.float32)
+        # le gain final est appliqué à l'export : on le répercute sur la mesure
+        plancher_apres = float(np.percentile(20 * np.log10(r + dsp.EPS), 12)
+                               + np.clip(settings.target_transcribe - lufs_mono, -20, 25))
+        info_sortie = ffmpeg_io.probe(wav)
+        rap = rapport_mod.construire(
+            source=path, sortie=wav, settings=settings, ana=ana, presets=PRESETS,
+            version=__version__, duree_source_s=ana.duration,
+            duree_sortie_s=info_sortie["duration"],
+            format_audio=dict(codec="pcm_s16le", profondeur_bits=16,
+                              frequence_hz=16000, canaux=1),
+            plancher_apres_dbfs=plancher_apres,
+            sonie_lufs=settings.target_transcribe,
+            gain_db=float(np.clip(settings.target_transcribe - lufs_mono, -20, 25)),
+            sortie_segmentee=bool(settings.segment_minutes),
+        )
+        outputs.append(dict(kind="rapport_json", path=rapport_mod.ecrire(
+            str(out_dir / f"{stem}_nettoyage.json"), rap)))
 
     Path(tmp.name).unlink(missing_ok=True)
     prog(1.0, "Terminé")

@@ -44,6 +44,10 @@ propres et les sigles maison.
 numpy/scipy seulement), ou [pyannote.audio](https://github.com/pyannote/pyannote-audio) s'il
 est installé.
 
+**Rapport de nettoyage** — un JSON accompagne l'export transcription : mesures avant/après,
+réglages, préservation des horodatages et avertissements structurés, pour qu'un outil en aval
+sache à quoi il a affaire. Noms de fichiers seuls, jamais de chemin.
+
 **Livrables** — compte rendu Word (temps de parole, relevé automatique, verbatim), verbatim
 texte, sous-titres SRT, et un JSON structuré pour enchaîner d'autres traitements.
 

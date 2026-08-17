@@ -128,6 +128,7 @@ pas mesurée — le reste l'est quand même, et l'outil vous le dit.
 | `…_verbatim.txt` | le verbatim seul, horodaté, en texte brut |
 | `…_transcription.json` | segments, horodatages, intervenants, relevé — pour enchaîner un traitement |
 | `….srt` | sous-titres, si vous devez recaler l'audio |
+| `…_nettoyage.json` | ce qui a été fait à l'audio : mesures avant/après, réglages, avertissements |
 
 ### Intervenants
 

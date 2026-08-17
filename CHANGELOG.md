@@ -1,5 +1,27 @@
 # Journal des versions
 
+## 1.3.0
+
+**Rapport JSON de nettoyage**
+
+Format figé avec Verbatim (issue #1). Écrit à côté de l'export transcription, sous le nom
+`<source>_nettoyage.json`.
+
+- Identification : `schema_version`, `outil`, `outil_version`, `preset` (reconnu
+  automatiquement si les curseurs correspondent encore à un préréglage, sinon `null`).
+- Fichiers : **noms de base uniquement, jamais de chemin absolu** — le rapport peut être
+  joint à un échange sans rien révéler de l'arborescence.
+- Chronologie : `duree_source_s`, `duree_sortie_s`, `ecart_duree_ms`, `retard_estime_ms`
+  (5 ms, mesuré), `horodatages_preserves`.
+- Mesures : plancher de bruit avant et après, niveau de parole, ronflement secteur, sonie,
+  gain appliqué, canaux source et traités, `format_audio`.
+- Avertissements structurés `code` / `niveau` / `message` : `DENOISE_ELEVE` au-delà de 75,
+  `VOIX_FAIBLE` sous 15 dB d'écart parole/bruit, `SILENCES_RACCOURCIS`,
+  `CHRONOLOGIE_MODIFIEE`, `FICHIER_SEGMENTE`.
+- 14 tests, dont un qui vérifie qu'aucun chemin absolu ne se glisse dans le rapport.
+
+Au passage : le numéro de version était resté à 1.1.1 malgré la sortie 1.2.0.
+
 ## 1.2.0
 
 **Les débuts de mots ne sont plus rabotés par le débruiteur**
