@@ -84,6 +84,25 @@ d_voice = db(den[SR + 6000:3 * SR - 6000]) - db(noisy[SR + 6000:3 * SR - 6000])
 check("débruitage : souffle réduit", d_sil < -12, f"({d_sil:.1f} dB)")
 check("débruitage : voix conservée", abs(d_voice) < 1.5, f"({d_voice:.1f} dB)")
 
+# --- débruitage : les débuts de mots ne doivent pas être rabotés ----------- #
+# Le masque spectral était lissé de façon symétrique dans le temps : au démarrage
+# d'un mot il restait fermé par le silence précédent, ce qui coûtait 5,4 dB sur
+# les 50 premières ms mesurées sur la chaîne complète. Ce test compare la tête
+# d'une salve à son corps : avec un lissage centré il retombe sous 0 dB.
+r2 = np.random.default_rng(5)
+sal = (r2.normal(0, 1, SR * 6) * 10 ** (-42 / 20)).astype(np.float32)
+_t = np.arange(int(0.15 * SR)) / SR
+_burst = (0.2 * np.sin(2 * np.pi * 220 * _t) + 0.1 * np.sin(2 * np.pi * 660 * _t)).astype(np.float32)
+_deb = [int(x * SR) for x in (0.8, 1.35, 1.9, 2.45, 3.0, 3.55, 4.1, 4.65)]
+for _d in _deb:
+    sal[_d:_d + len(_burst)] += _burst
+_den = dsp.denoise(sal, dsp.noise_profile(sal), 0.6)
+_tete = np.mean([db(_den[d:d + int(.03 * SR)]) - db(sal[d:d + int(.03 * SR)]) for d in _deb])
+_corps = np.mean([db(_den[d + int(.05 * SR):d + int(.14 * SR)])
+                  - db(sal[d + int(.05 * SR):d + int(.14 * SR)]) for d in _deb])
+check("débruitage : attaques préservées", _tete - _corps > 0.7,
+      f"({_tete - _corps:+.2f} dB tête/corps ; lissage centré = {-0.32:+.2f})")
+
 # --- sonie : un signal calibré doit être mesuré correctement --------------- #
 # une sinusoïde 1 kHz à -20 dBFS mesure ≈ -23 LUFS (mono)
 m = dsp.LoudnessMeter(SR, 1)

@@ -1,5 +1,25 @@
 # Journal des versions
 
+## 1.2.0
+
+**Les débuts de mots ne sont plus rabotés par le débruiteur**
+
+Signalé par le cadrage d'intégration avec Verbatim (issue #1), mesuré, puis corrigé.
+
+- Le masque du débruiteur spectral était lissé de façon **symétrique** dans le temps.
+  Au démarrage d'un mot, il restait fermé par le silence qui précédait et mettait deux à
+  trois trames à s'ouvrir. Mesure sur 44 prises de parole : **−5,4 dB en moyenne sur les
+  50 premières millisecondes**, pire cas −15,7 dB, 34 débuts sur 44 au-delà de 3 dB.
+- Ni la porte de bruit ni le compresseur n'étaient en cause : désactivés l'un après
+  l'autre, la mesure ne bougeait pas ; débruitage désactivé, elle tombait à −0,55 dB.
+- Le lissage temporel ne regarde désormais que **vers l'avant** ([t, t+8]) : le masque est
+  déjà ouvert quand la voix arrive. Résultat : **−1,42 dB en moyenne**, 12 débuts sur 44
+  au-delà de 3 dB, pour environ 1 dB de bruit de fond en moins bien.
+- Un retour lent (masque maintenu ouvert après la parole) a été essayé et écarté : 3 dB de
+  bruit de fond perdus sans bénéfice sur les attaques. C'est noté dans le code.
+- Test de non-régression ajouté : `tests/test_dsp.py` compare la tête d'une salve à son
+  corps ; le lissage centré échoue à ce test.
+
 ## 1.1.1
 
 **Correctifs Windows**

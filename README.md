@@ -63,6 +63,7 @@ un intervenant 12 dB plus faible), généré par `tests/make_sample.py` :
 | Contraste parole / bruit | 16,2 dB | 43,1 dB |
 | Ronflement 50 Hz | référence | −45 dB |
 | Crête finale | — | −1,1 dBFS, aucun dépassement |
+| Débuts de mots (44 prises de parole) | — | −1,4 dB, contre −5,4 dB avant la version 1.2.0 |
 
 Une réunion d'une heure est nettoyée en environ 2 min 30, sous 400 Mo de mémoire.
 
