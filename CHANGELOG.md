@@ -1,5 +1,16 @@
 # Journal des versions
 
+## 1.1.1
+
+**Correctifs Windows**
+
+- La sortie console est forcée en UTF-8 : sans cela, les tests et la ligne de commande
+  s'arrêtaient sur une `UnicodeEncodeError` dès le premier caractère « ✓ » ou « █ »,
+  la console Windows utilisant la page de code 1252.
+- Bit d'exécution rétabli sur `Demarrer_Mac_Linux.command` : perdu lors d'une modification
+  via l'éditeur web de GitHub, il empêchait le lancement par double-clic sous macOS et Linux.
+- Variables `PYTHONUTF8` et `PYTHONIOENCODING` posées dans l'intégration continue.
+
 ## 1.1.0
 
 **Vérification du moteur sur la machine de l'utilisateur**

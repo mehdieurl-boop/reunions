@@ -14,6 +14,7 @@ import sys
 import time
 from pathlib import Path
 
+from . import console_utf8
 from .pipeline import PRESETS, Settings, process_file, run_transcription
 from .transcribe import DEFAULT_MODEL, MODELS, TranscribeSettings, status as tr_status
 
@@ -91,6 +92,7 @@ def transcribe_settings_from_args(a) -> TranscribeSettings:
 
 
 def main(argv=None) -> int:
+    console_utf8()
     a = build_parser().parse_args(argv)
     if a.telecharger_modele:
         from .transcribe import _load_model, is_available, INSTALL_HINT

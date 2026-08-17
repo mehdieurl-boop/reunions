@@ -5,6 +5,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from audiotool import ffmpeg_io  # noqa: E402
+from audiotool import console_utf8  # noqa: E402
+
+console_utf8()
 
 SR = 48000
 rng = np.random.default_rng(7)

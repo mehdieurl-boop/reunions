@@ -12,6 +12,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from audiotool import dsp, ffmpeg_io  # noqa: E402
+from audiotool import console_utf8  # noqa: E402
+
+console_utf8()
 
 SR = 48000
 

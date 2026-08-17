@@ -14,6 +14,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from audiotool import diarize, documents, minutes  # noqa: E402
+from audiotool import console_utf8  # noqa: E402
+
+console_utf8()
 from audiotool.pipeline import Settings, process_file, run_transcription  # noqa: E402
 from audiotool.transcribe import Segment, TranscribeSettings  # noqa: E402
 
