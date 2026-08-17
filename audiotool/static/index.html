@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Réunions — nettoyage audio et transcription</title>
+<style>
+  :root{
+    --bg:#f6f6f4; --panel:#fff; --ink:#1b1b19; --muted:#6b6b66;
+    --line:#e2e2dd; --accent:#2f6f5e; --accent-soft:#e7f0ed; --warn:#a8452c;
+    --warn-soft:#fbeee9; --ok:#2f6f5e; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:22px 28px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+  h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  main{max-width:1160px;margin:0 auto;padding:22px 20px 70px;display:grid;
+    grid-template-columns:1fr 392px;gap:20px;align-items:start}
+  @media(max-width:940px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 18px 16px;margin-bottom:18px}
+  .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  #drop{border:1.5px dashed #c9c9c2;border-radius:var(--radius);padding:26px;text-align:center;
+    color:var(--muted);cursor:pointer;transition:.15s;background:#fbfbfa}
+  #drop.hot{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  #drop b{color:var(--ink)}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .files{list-style:none;margin:12px 0 0;padding:0}
+  .files li{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);
+    border-radius:8px;margin-bottom:7px;background:#fcfcfb}
+  .files .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .files .meta{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+  button{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:pointer}
+  button:hover:not(:disabled){border-color:#bfbfb8}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+  button.primary:hover:not(:disabled){background:#26594c}
+  button:disabled{opacity:.45;cursor:default}
+  button.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:5px 8px}
+  button.small{font-size:13px;padding:5px 10px}
+  .presets{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+  .presets button{font-size:13px;padding:6px 11px}
+  .presets button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .ctrl{margin:13px 0}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px}
+  .ctrl .val{color:var(--muted);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  select,input[type=number],input[type=text],input[type=password],textarea{font:inherit;
+    padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+  .opt{display:flex;align-items:center;gap:8px;margin:9px 0;font-size:13.5px;flex-wrap:wrap}
+  .opt input[type=checkbox]{accent-color:var(--accent)}
+  .hint{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .ab{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .ab button{flex:1}
+  .ab button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .bar{height:6px;background:#ececeb;border-radius:99px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+  .job{border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-bottom:9px;background:#fcfcfb}
+  .job .top{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-bottom:7px}
+  .job .st{color:var(--muted);font-size:12.5px;white-space:nowrap}
+  .dl{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .dl a{font-size:13px;text-decoration:none;color:var(--accent);border:1px solid var(--accent);
+    padding:5px 10px;border-radius:7px;background:var(--accent-soft)}
+  .report{font-size:12.5px;color:var(--muted);margin-top:8px;display:grid;
+    grid-template-columns:1fr 1fr;gap:2px 14px}
+  .err{color:var(--warn);font-size:13px;margin-top:6px}
+  .status{font-size:12.5px;color:var(--muted);margin-top:6px}
+  code{background:#f0f0ed;padding:1px 5px;border-radius:5px;font-size:12.5px}
+  canvas{width:100%;height:56px;display:block;background:#fbfbfa;border:1px solid var(--line);
+    border-radius:7px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 9px;
+    border-radius:99px;border:1px solid var(--line);background:#fbfbfa;color:var(--muted)}
+  .chip.ok{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .chip.no{background:var(--warn-soft);border-color:#e2c4b9;color:var(--warn)}
+  .setup-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--line)}
+  .setup-line:last-of-type{border-bottom:0}
+  .setup-line .lbl{font-size:13.5px}
+  #log{display:none;background:#1e1e1c;color:#d8d8d2;font:12px/1.45 ui-monospace,SFMono-Regular,
+    Menlo,Consolas,monospace;padding:10px 12px;border-radius:8px;max-height:190px;
+    overflow:auto;white-space:pre-wrap;margin-top:10px}
+  .path{font-size:12.5px;color:var(--muted);word-break:break-all;background:#fbfbfa;
+    border:1px solid var(--line);border-radius:7px;padding:6px 9px;flex:1;min-width:0}
+  dialog{border:1px solid var(--line);border-radius:12px;padding:0;width:min(560px,92vw);
+    box-shadow:0 18px 50px rgba(0,0,0,.18)}
+  dialog::backdrop{background:rgba(20,20,18,.35)}
+  .dlg-head{padding:15px 18px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px}
+  .dlg-body{padding:14px 18px;max-height:52vh;overflow:auto}
+  .dlg-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;
+    justify-content:space-between;gap:10px;align-items:center}
+  .dirlist{list-style:none;margin:8px 0 0;padding:0}
+  .dirlist li{padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13.5px}
+  .dirlist li:hover{background:var(--accent-soft);color:var(--accent)}
+  .crumbs{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .crumbs button{padding:3px 8px;font-size:12.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Réunions — nettoyage audio et transcription</h1>
+  <div class="sub">Nettoyage, verbatim horodaté, séparation des intervenants et compte rendu. Traitement local : aucun fichier ne quitte cet ordinateur.</div>
+</header>
+
+<main>
+<section>
+  <div class="card">
+    <h2>1 · Fichiers</h2>
+    <div id="drop">Glissez vos enregistrements ici — <b>ou cliquez pour parcourir</b>
+      <div class="hint">m4a, mp4, mp3, wav, aac, ogg, mkv… (exports Zoom compris)</div></div>
+    <input type="file" id="picker" multiple hidden accept="audio/*,video/*">
+    <div class="row" style="margin-top:10px">
+      <button id="pickfolder">Choisir dans un dossier</button>
+      <span class="hint">Recommandé pour les gros fichiers : ils sont lus sur place, sans recopie.</span>
+    </div>
+    <ul class="files" id="filelist"></ul>
+  </div>
+
+  <div class="card">
+    <h2>2 · Aperçu 20 secondes</h2>
+    <div class="row">
+      <select id="prevfile" style="flex:1"></select>
+      <button id="dopreview">Écouter l'aperçu</button>
+    </div>
+    <div class="ctrl" style="margin-bottom:4px">
+      <label>Position dans l'enregistrement <span class="val" id="startv">25 %</span></label>
+      <input type="range" id="start" min="0" max="100" value="25">
+    </div>
+    <div class="ab">
+      <button id="btnA">Avant</button>
+      <button id="btnB" class="on">Après</button>
+      <button id="btnStop" class="ghost">Stop</button>
+    </div>
+    <canvas id="wave" height="56"></canvas>
+    <div class="status" id="prevstatus">Les deux extraits sont calés au même volume : vous comparez la qualité, pas le niveau.</div>
+    <audio id="aA" preload="auto"></audio><audio id="aB" preload="auto"></audio>
+  </div>
+
+  <div class="card">
+    <h2>3 · Transcription</h2>
+    <div class="opt"><input type="checkbox" id="tr_enabled"><label for="tr_enabled"><b>Transcrire après le nettoyage</b></label></div>
+    <div id="trstate" class="status"></div>
+    <div id="trbody" style="display:none">
+      <div class="ctrl"><label>Modèle</label>
+        <select id="tr_model" style="width:100%"></select>
+        <div class="hint" id="modelhint"></div></div>
+      <div class="opt"><span>Langue</span>
+        <select id="tr_language"><option value="fr">français</option><option value="auto">détection auto</option>
+        <option value="en">anglais</option><option value="es">espagnol</option><option value="de">allemand</option></select></div>
+      <div class="ctrl"><label>Vocabulaire de la réunion</label>
+        <textarea id="tr_vocabulary" rows="2" style="width:100%"
+          placeholder="Noms des participants, sigles maison, noms de produits…"></textarea>
+        <div class="hint">Ces mots sont soufflés au moteur : c'est le réglage qui améliore le plus les noms propres.</div></div>
+      <div class="opt"><input type="checkbox" id="tr_diarize"><label for="tr_diarize">Identifier les intervenants</label></div>
+      <div class="opt"><span>Nombre d'intervenants</span>
+        <input type="number" id="tr_max_speakers" min="0" max="10" style="width:70px">
+        <span class="hint">0 = automatique</span></div>
+      <div class="hint" style="margin:-2px 0 10px">Si vous le connaissez, indiquez-le : l'identification est nettement plus fiable.</div>
+      <div class="opt"><b style="font-size:13px">Livrables</b></div>
+      <div class="opt"><input type="checkbox" id="f_docx"><label for="f_docx">Compte rendu Word</label>
+        <input type="checkbox" id="f_txt" style="margin-left:12px"><label for="f_txt">Verbatim .txt</label></div>
+      <div class="opt"><input type="checkbox" id="f_srt"><label for="f_srt">Sous-titres .srt</label>
+        <input type="checkbox" id="f_json" style="margin-left:12px"><label for="f_json">Données .json</label></div>
+      <div class="opt" id="llmrow" style="display:none"><input type="checkbox" id="tr_llm">
+        <label for="tr_llm">Synthèse rédigée par le modèle local détecté</label></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Traitement</h2>
+    <div class="row">
+      <button class="primary" id="run">Nettoyer les fichiers</button>
+      <button id="openfolder">Ouvrir le dossier des résultats</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="path" id="outdir"></span>
+      <button class="small" id="chooseout">Changer</button>
+    </div>
+    <div id="jobs" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <h2>5 · Traitement automatique</h2>
+    <div class="opt"><input type="checkbox" id="watch_enabled">
+      <label for="watch_enabled"><b>Surveiller un dossier</b></label></div>
+    <div class="hint" style="margin-top:-4px">Tout enregistrement déposé dans ce dossier est traité tout seul, avec les réglages ci-dessus. Laissez la fenêtre de l'outil ouverte.</div>
+    <div class="row" style="margin-top:10px">
+      <span class="path" id="watchpath">aucun dossier choisi</span>
+      <button class="small" id="choosewatch">Choisir</button>
+    </div>
+    <div class="status" id="watchstate"></div>
+  </div>
+</section>
+
+<aside>
+  <div class="card">
+    <h2>Réglages audio</h2>
+    <div class="presets" id="presets">
+      <button data-p="zoom_standard">Zoom standard</button>
+      <button data-p="zoom_micro_lointain">Micro éloigné</button>
+      <button data-p="zoom_bon_micro">Bon micro</button>
+      <button data-p="salle_bruyante">Salle bruyante</button>
+    </div>
+
+    <div class="ctrl"><label>Débruitage <span class="val" id="v_denoise"></span></label>
+      <input type="range" id="denoise" min="0" max="100"><div class="hint">Retire souffle, ventilation, bruit de fond permanent.</div></div>
+    <div class="ctrl"><label>Douceur des aigus <span class="val" id="v_softness"></span></label>
+      <input type="range" id="softness" min="0" max="100"><div class="hint">Adoucit la brillance et les sifflantes (désesseur).</div></div>
+    <div class="ctrl"><label>Compression <span class="val" id="v_compression"></span></label>
+      <input type="range" id="compression" min="0" max="100"><div class="hint">Rapproche les voix fortes et les voix lointaines.</div></div>
+    <div class="ctrl"><label>Intelligibilité <span class="val" id="v_presence"></span></label>
+      <input type="range" id="presence" min="0" max="100"><div class="hint">Léger relief à 2,8 kHz : articulation plus nette.</div></div>
+    <div class="ctrl"><label>Coupe-grave <span class="val" id="v_highpass"></span></label>
+      <input type="range" id="highpass" min="40" max="160"><div class="hint">Enlève les grondements de table et de climatisation.</div></div>
+
+    <div class="opt"><input type="checkbox" id="gate"><label for="gate">Atténuer le fond entre les prises de parole</label></div>
+    <div class="opt"><input type="checkbox" id="keep_stereo"><label for="keep_stereo">Conserver la stéréo</label></div>
+    <div class="hint" style="margin:-4px 0 10px">Décoché : traitement en mono, deux fois plus rapide et sans incidence sur la parole.</div>
+    <div class="opt"><span>Ronflement secteur</span>
+      <select id="hum"><option value="auto">détection auto</option><option value="50">50 Hz (Europe)</option>
+      <option value="60">60 Hz (Amérique)</option><option value="off">désactivé</option></select></div>
+  </div>
+
+  <div class="card">
+    <h2>Exports audio</h2>
+    <div class="opt"><input type="checkbox" id="ex_listen"><label for="ex_listen">Version écoute</label>
+      <select id="listen_format"><option value="mp3">MP3</option><option value="wav">WAV</option>
+      <option value="flac">FLAC</option></select></div>
+    <div class="hint" style="margin:-4px 0 10px">−16 LUFS : confortable pour réécouter.</div>
+    <div class="opt"><input type="checkbox" id="ex_transcribe"><label for="ex_transcribe">Version transcription</label></div>
+    <div class="hint" style="margin:-4px 0 10px">WAV mono 16 kHz, −20 LUFS : le format attendu par les moteurs de transcription.</div>
+    <div class="opt"><input type="checkbox" id="trim_silence"><label for="trim_silence">Raccourcir les longs silences</label></div>
+    <div class="hint" style="margin:-4px 0 10px">Réduit la durée à transcrire, mais décale les horodatages.</div>
+    <div class="opt"><span>Découper en segments de</span>
+      <input type="number" id="segment_minutes" min="0" max="120" step="5" style="width:72px"> min</div>
+    <div class="hint" style="margin:-2px 0 0">0 = pas de découpage.</div>
+  </div>
+
+  <div class="card">
+    <h2>Installation <span id="setupchips"></span></h2>
+    <div id="setuplines"></div>
+    <div id="log"></div>
+    <div class="status" id="setupnote"></div>
+  </div>
+
+  <div class="card">
+    <h2>État</h2>
+    <div class="status" id="env"></div>
+  </div>
+</aside>
+</main>
+
+<dialog id="browser">
+  <div class="dlg-head" id="dlgtitle">Choisir un dossier</div>
+  <div class="dlg-body">
+    <div class="row" id="shortcuts" style="margin-bottom:10px"></div>
+    <div class="crumbs" id="crumbs"></div>
+    <ul class="dirlist" id="dirlist"></ul>
+  </div>
+  <div class="dlg-foot">
+    <span class="path" id="dlgpath"></span>
+    <span class="row"><button id="dlgcancel">Annuler</button>
+    <button class="primary" id="dlgok">Choisir ce dossier</button></span>
+  </div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = (u, o) => fetch(u, o).then(r => r.json());
+const post = (u, body) => api(u, {method:'POST', headers:{'Content-Type':'application/json'},
+                                  body: JSON.stringify(body || {})});
+let FILES = [], PRESETS = {}, POLL = null, SETUPPOLL = null, SAVE = null;
+
+const SLIDERS = ['denoise','softness','compression','presence','highpass'];
+const FORMATS = ['docx','txt','srt','json'];
+const fmtPct = (k,v) => k === 'highpass' ? v + ' Hz' : v + ' %';
+
+/* ---------------- réglages ---------------- */
+function settings(){
+  const s = {};
+  SLIDERS.forEach(k => s[k] = +$('#'+k).value);
+  s.gate = $('#gate').checked;
+  s.keep_stereo = $('#keep_stereo').checked;
+  s.hum = $('#hum').value;
+  s.exports = [];
+  if ($('#ex_listen').checked) s.exports.push('listen');
+  if ($('#ex_transcribe').checked) s.exports.push('transcribe');
+  s.listen_format = $('#listen_format').value;
+  s.trim_silence = $('#trim_silence').checked;
+  s.segment_minutes = +$('#segment_minutes').value || 0;
+  return s;
+}
+function trSettings(){
+  return {
+    enabled: $('#tr_enabled').checked,
+    model: $('#tr_model').value,
+    language: $('#tr_language').value,
+    vocabulary: $('#tr_vocabulary').value,
+    diarize: $('#tr_diarize').checked,
+    max_speakers: +$('#tr_max_speakers').value || 0,
+    formats: FORMATS.filter(f => $('#f_'+f).checked),
+    llm: $('#tr_llm').checked,
+  };
+}
+function applySettings(s){
+  SLIDERS.forEach(k => { if (s[k] !== undefined) $('#'+k).value = s[k]; });
+  if (s.gate !== undefined) $('#gate').checked = s.gate;
+  if (s.keep_stereo !== undefined) $('#keep_stereo').checked = s.keep_stereo;
+  if (s.hum) $('#hum').value = s.hum;
+  if (s.exports){ $('#ex_listen').checked = s.exports.includes('listen');
+    $('#ex_transcribe').checked = s.exports.includes('transcribe'); }
+  if (s.listen_format) $('#listen_format').value = s.listen_format;
+  if (s.trim_silence !== undefined) $('#trim_silence').checked = s.trim_silence;
+  if (s.segment_minutes !== undefined) $('#segment_minutes').value = s.segment_minutes;
+  refreshLabels();
+}
+function applyTr(t){
+  $('#tr_enabled').checked = !!t.enabled;
+  if (t.model) $('#tr_model').value = t.model;
+  if (t.language) $('#tr_language').value = t.language;
+  if (t.vocabulary !== undefined) $('#tr_vocabulary').value = t.vocabulary;
+  $('#tr_diarize').checked = t.diarize !== false;
+  $('#tr_max_speakers').value = t.max_speakers || 0;
+  const f = t.formats || ['docx','txt','json'];
+  FORMATS.forEach(k => $('#f_'+k).checked = f.includes(k));
+  $('#tr_llm').checked = !!t.llm;
+  $('#trbody').style.display = $('#tr_enabled').checked ? 'block' : 'none';
+  runLabel();
+}
+function refreshLabels(){ SLIDERS.forEach(k => $('#v_'+k).textContent = fmtPct(k, $('#'+k).value)); }
+function runLabel(){ $('#run').textContent =
+  $('#tr_enabled').checked ? 'Nettoyer et transcrire' : 'Nettoyer les fichiers'; }
+function save(){                       // mémorisé sur le disque : retrouvé au prochain lancement
+  clearTimeout(SAVE);
+  SAVE = setTimeout(() => post('/api/settings', {settings: settings(), transcription: trSettings()}), 600);
+}
+
+/* ---------------- fichiers ---------------- */
+const drop = $('#drop'), picker = $('#picker');
+drop.onclick = () => picker.click();
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.add('hot'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop', ev => upload(ev.dataTransfer.files));
+picker.onchange = () => upload(picker.files);
+
+const DROPHTML = 'Glissez vos enregistrements ici — <b>ou cliquez pour parcourir</b>' +
+  '<div class="hint">m4a, mp4, mp3, wav, aac, ogg, mkv… (exports Zoom compris)</div>';
+
+async function upload(list){
+  if (!list || !list.length) return;
+  const fd = new FormData();
+  [...list].forEach(f => fd.append('files', f));
+  drop.textContent = 'Copie en cours…';
+  const r = await api('/api/files', {method:'POST', body:fd});
+  drop.innerHTML = DROPHTML;
+  FILES = FILES.concat(r.files); renderFiles();
+}
+
+const dur = s => { s = Math.round(s); const m = Math.floor(s/60);
+  return (m >= 60 ? Math.floor(m/60) + ' h ' + String(m%60).padStart(2,'0') + ' min'
+                  : m + ' min ' + String(s%60).padStart(2,'0') + ' s'); };
+
+function renderFiles(){
+  $('#filelist').innerHTML = FILES.map(f => `<li data-id="${f.id}">
+    <span class="nm" title="${f.path}">${f.name}</span>
+    <span class="meta">${dur(f.duration)} · ${f.channels === 1 ? 'mono' : 'stéréo'}</span>
+    <button class="ghost" data-del="${f.id}">retirer</button></li>`).join('');
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    await fetch('/api/files/' + b.dataset.del, {method:'DELETE'});
+    FILES = FILES.filter(f => f.id !== b.dataset.del); renderFiles(); });
+  $('#prevfile').innerHTML = FILES.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  $('#run').disabled = !FILES.length;
+}
+
+/* ---------------- aperçu ---------------- */
+$('#start').oninput = () => $('#startv').textContent = $('#start').value + ' %';
+const aA = $('#aA'), aB = $('#aB');
+$('#dopreview').onclick = async () => {
+  const fid = $('#prevfile').value; if (!fid) return;
+  const f = FILES.find(x => x.id === fid);
+  $('#prevstatus').textContent = 'Préparation de l\'aperçu…';
+  $('#dopreview').disabled = true;
+  try{
+    const r = await post('/api/preview', {file_id:fid, settings:settings(),
+                                          start: f.duration * (+$('#start').value/100), seconds:20});
+    aA.src = r.before; aB.src = r.after;
+    const hum = r.analysis.ronflement_secteur_hz;
+    $('#prevstatus').textContent =
+      `Extrait à ${dur(r.start)} · plancher de bruit ${r.analysis.plancher_bruit_dbfs} dBFS`
+      + (hum ? ` · ronflement ${hum} Hz détecté et filtré` : ' · pas de ronflement secteur');
+    playB(); drawWave(r.after);
+  }catch(e){ $('#prevstatus').textContent = 'Échec de l\'aperçu : ' + e; }
+  $('#dopreview').disabled = false;
+};
+const sync = (from,to) => { try{ to.currentTime = from.currentTime; }catch(e){} };
+function playA(){ sync(aB,aA); aB.pause(); aA.play(); $('#btnA').classList.add('on'); $('#btnB').classList.remove('on'); }
+function playB(){ sync(aA,aB); aA.pause(); aB.play(); $('#btnB').classList.add('on'); $('#btnA').classList.remove('on'); }
+$('#btnA').onclick = playA; $('#btnB').onclick = playB;
+$('#btnStop').onclick = () => { aA.pause(); aB.pause(); };
+
+async function drawWave(url){
+  const c = $('#wave'), g = c.getContext('2d');
+  c.width = c.clientWidth * devicePixelRatio; c.height = 56 * devicePixelRatio;
+  g.clearRect(0,0,c.width,c.height);
+  try{
+    const buf = await new (window.AudioContext||window.webkitAudioContext)()
+      .decodeAudioData(await (await fetch(url)).arrayBuffer());
+    const d = buf.getChannelData(0), n = Math.floor(c.width), step = Math.floor(d.length/n);
+    g.fillStyle = '#2f6f5e';
+    for (let i=0;i<n;i++){ let m=0; for (let j=0;j<step;j+=8) m = Math.max(m, Math.abs(d[i*step+j]||0));
+      const h = Math.max(1, m*c.height*0.92); g.fillRect(i, (c.height-h)/2, 1, h); }
+  }catch(e){}
+}
+
+/* ---------------- traitement ---------------- */
+const KIND = {listen:'Écoute', transcribe:'Audio transcription', compte_rendu:'Compte rendu Word',
+  verbatim_txt:'Verbatim texte', sous_titres:'Sous-titres', donnees_json:'Données JSON'};
+const LABELS = {nb_segments:'Segments transcrits', nb_mots:'Mots', intervenants:'Intervenants détectés',
+  methode_locuteurs:'Méthode d\'identification', decisions_reperees:'Décisions repérées',
+  actions_reperees:'Actions repérées', modele:'Modèle de transcription', duree_s:'Durée (s)',
+  canaux:'Canaux traités', canaux_source:'Canaux à la source', plancher_bruit_dbfs:'Plancher de bruit (dBFS)',
+  niveau_parole_dbfs:'Niveau de parole (dBFS)', ronflement_secteur_hz:'Ronflement secteur (Hz)',
+  lufs_apres_traitement:'Sonie avant calage (LUFS)', gain_applique_ecoute_db:'Gain final écoute (dB)'};
+
+$('#run').onclick = async () => {
+  const s = settings();
+  if (!s.exports.length && !$('#tr_enabled').checked){ alert('Choisissez au moins un export.'); return; }
+  await post('/api/process', {file_ids: FILES.map(f => f.id), settings: s, transcription: trSettings()});
+  if (!POLL) POLL = setInterval(poll, 900);
+  poll();
+};
+$('#openfolder').onclick = async () => {
+  const r = await post('/api/open_folder', {});
+  if (!r.ok) alert('Dossier : ' + r.dir);
+};
+
+async function poll(){
+  const r = await api('/api/jobs');
+  $('#jobs').innerHTML = r.jobs.map(j => `<div class="job">
+    <div class="top"><span>${j.auto ? '⟳ ' : ''}${j.name}</span><span class="st">${j.message}</span></div>
+    <div class="bar"><i style="width:${Math.round(j.progress*100)}%"></i></div>
+    ${j.error ? `<div class="err">${j.error}</div>` : ''}
+    ${j.outputs.length ? '<div class="dl">' + j.outputs.map(o =>
+      `<a href="/api/download?path=${encodeURIComponent(o.path)}">${KIND[o.kind]||o.kind} · ${(o.size/1048576).toFixed(1)} Mo</a>`).join('') + '</div>' : ''}
+    ${j.report ? '<div class="report">' + Object.entries(j.report).map(([k,v]) =>
+      `<span>${LABELS[k]||k}</span><span>${v === null ? '—' : v}</span>`).join('') + '</div>' : ''}
+  </div>`).join('');
+  const busy = r.jobs.some(j => j.state === 'en cours' || j.state === 'en attente');
+  if (!busy && POLL && !$('#watch_enabled').checked){ clearInterval(POLL); POLL = null; }
+}
+
+/* ---------------- explorateur de dossiers ---------------- */
+let DLG_PATH = '', DLG_CB = null, DLG_FILES = false;
+async function openBrowser(title, start, cb, withFiles){
+  $('#dlgtitle').textContent = title; DLG_CB = cb; DLG_FILES = !!withFiles;
+  $('#dlgok').textContent = withFiles ? 'Ajouter la sélection' : 'Choisir ce dossier';
+  await gotoDir(start || '');
+  $('#browser').showModal();
+}
+async function gotoDir(p){
+  const r = await api('/api/browse?files=' + (DLG_FILES ? 1 : 0) + '&path=' + encodeURIComponent(p || ''));
+  DLG_PATH = r.path;
+  $('#dlgpath').textContent = r.path;
+  $('#shortcuts').innerHTML = r.raccourcis.map(d =>
+    `<button class="small" data-go="${d.path.replace(/"/g,'&quot;')}">${d.name}</button>`).join('');
+  $('#crumbs').innerHTML = (r.parent ? `<button data-go="${r.parent}">↑ dossier parent</button>` : '')
+    + `<span style="align-self:center">${r.path}</span>`;
+  const dirsHtml = r.dirs.map(d =>
+    `<li data-go="${d.path.replace(/"/g,'&quot;')}">📁 ${d.name}</li>`).join('');
+  const filesHtml = (r.fichiers || []).map(f =>
+    `<li style="cursor:default"><label style="display:flex;gap:8px;cursor:pointer">
+      <input type="checkbox" class="fpick" value="${f.path.replace(/"/g,'&quot;')}">
+      <span>🎧 ${f.name}</span><span class="hint" style="margin-left:auto">${f.size} Mo</span></label></li>`).join('');
+  $('#dirlist').innerHTML = dirsHtml + filesHtml ||
+    '<li style="color:var(--muted);cursor:default">dossier vide</li>';
+  document.querySelectorAll('[data-go]').forEach(el => el.onclick = () => gotoDir(el.dataset.go));
+}
+$('#dlgcancel').onclick = () => $('#browser').close();
+$('#dlgok').onclick = () => {
+  const picked = [...document.querySelectorAll('.fpick:checked')].map(c => c.value);
+  $('#browser').close();
+  if (DLG_CB) DLG_CB(DLG_FILES ? picked : DLG_PATH);
+};
+
+$('#pickfolder').onclick = () => openBrowser('Choisir des enregistrements', '', async paths => {
+  if (!paths.length) return;
+  const r = await post('/api/files_by_path', {paths});
+  if (r.errors && r.errors.length) alert('Introuvable : ' + r.errors.join(', '));
+  FILES = FILES.concat(r.files); renderFiles();
+}, true);
+
+$('#chooseout').onclick = () => openBrowser('Où ranger les fichiers produits', $('#outdir').textContent,
+  async p => { const r = await post('/api/out_dir', {path:p});
+    if (r.ok) $('#outdir').textContent = r.path; else alert(r.error); });
+
+$('#choosewatch').onclick = () => openBrowser('Dossier à surveiller', $('#watchpath').textContent,
+  async p => { $('#watchpath').textContent = p; await saveWatch(); });
+
+/* ---------------- dossier surveillé ---------------- */
+async function saveWatch(){
+  const folder = $('#watchpath').textContent.startsWith('/') || $('#watchpath').textContent.match(/^[A-Za-z]:/)
+    ? $('#watchpath').textContent : '';
+  const st = await post('/api/watch', {folder, enabled: $('#watch_enabled').checked && !!folder});
+  showWatch(st);
+  if (st.enabled && !POLL){ POLL = setInterval(poll, 2000); }
+}
+function showWatch(st){
+  $('#watch_enabled').checked = !!st.enabled;
+  if (st.folder) $('#watchpath').textContent = st.folder;
+  $('#watchstate').textContent = st.enabled
+    ? `Surveillance active — ${st.reperes} fichier(s) repris automatiquement depuis le démarrage. Vérification toutes les 15 secondes.`
+    : (st.folder && !st.valide ? 'Ce dossier n\'existe plus.' : 'Surveillance désactivée.');
+}
+$('#watch_enabled').onchange = saveWatch;
+
+/* ---------------- installation ---------------- */
+function renderSetup(su, tr){
+  const chip = (ok, txt) => `<span class="chip ${ok?'ok':'no'}">${ok ? '✓' : '•'} ${txt}</span>`;
+  $('#setupchips').innerHTML = '';
+  const model = $('#tr_model').value;
+  const modelOk = (su.modeles[model] || {}).telecharge;
+  const lines = [];
+
+  lines.push(line('Moteur de transcription', su.composants.transcription.installe,
+    su.composants.transcription.installe ? 'Installé' : 'Installer',
+    'install-transcription', su.composants.transcription.note));
+
+  if (su.composants.transcription.installe)
+    lines.push(line(`Modèle « ${model} »`, modelOk, modelOk ? 'Téléchargé' : 'Télécharger',
+      'model', `${(su.modeles[model]||{}).taille||''} — à faire une fois, ensuite hors ligne.`));
+
+  lines.push(line('Identification avancée (pyannote)', su.composants.intervenants.installe,
+    su.composants.intervenants.installe ? 'Installé' : 'Installer',
+    'install-intervenants', su.composants.intervenants.note));
+
+  if (su.composants.intervenants.installe)
+    lines.push(`<div class="setup-line"><span class="lbl">Jeton HuggingFace</span>
+      <span class="chip ${su.jeton_hf?'ok':'no'}">${su.jeton_hf ? '✓ enregistré' : 'à coller'}</span></div>
+      <div class="row" style="margin:6px 0 2px"><input type="password" id="hf" placeholder="hf_…" style="flex:1">
+      <button class="small" id="savehf">Enregistrer</button></div>
+      <div class="hint">Compte gratuit sur huggingface.co, accepter les conditions du modèle
+      « pyannote/speaker-diarization-3.1 », puis créer un jeton et le coller ici.</div>`);
+
+  $('#setuplines').innerHTML = lines.join('');
+  document.querySelectorAll('[data-setup]').forEach(b => b.onclick = async () => {
+    const what = b.dataset.setup;
+    b.disabled = true;
+    if (what === 'model') await post('/api/setup/model', {name: $('#tr_model').value});
+    else await post('/api/setup/install', {component: what.replace('install-','')});
+    startSetupPoll();
+  });
+  const hf = $('#savehf');
+  if (hf) hf.onclick = async () => { await post('/api/setup/token', {token: $('#hf').value});
+    $('#hf').value = ''; refreshSetup(); };
+
+  const t = su.tache;
+  $('#log').style.display = (t.running || (t.log && t.log.length)) ? 'block' : 'none';
+  if (t.log && t.log.length) { $('#log').textContent = t.log.join('\n'); $('#log').scrollTop = 1e6; }
+  $('#setupnote').innerHTML = t.running ? `En cours : ${t.name}… (vous pouvez continuer à travailler)`
+    : (t.ok === false
+        ? `<span style="color:var(--warn)">Échec : ${t.message}</span><br>`
+          + 'Vérifiez votre connexion internet, puis réessayez. Si votre réseau filtre les '
+          + 'téléchargements, essayez depuis une autre connexion.'
+        : (t.ok ? 'Opération terminée.' : ''));
+}
+function line(label, ok, action, key, note){
+  return `<div class="setup-line"><span class="lbl">${label}<div class="hint">${note||''}</div></span>
+    ${ok ? '<span class="chip ok">✓ ' + action + '</span>'
+         : `<button class="small primary" data-setup="${key}">${action}</button>`}</div>`;
+}
+async function refreshSetup(){
+  const su = await api('/api/setup');
+  renderSetup(su);
+  updateTrState(su);
+  return su;
+}
+function startSetupPoll(){
+  if (SETUPPOLL) return;
+  SETUPPOLL = setInterval(async () => {
+    const su = await refreshSetup();
+    if (!su.tache.running){ clearInterval(SETUPPOLL); SETUPPOLL = null; }
+  }, 1200);
+}
+function updateTrState(su){
+  const ok = su.composants.transcription.installe;
+  $('#tr_enabled').disabled = !ok;
+  if (!ok){
+    $('#tr_enabled').checked = false;
+    $('#trbody').style.display = 'none';
+    $('#trstate').innerHTML = 'Moteur pas encore installé — utilisez le bouton <b>Installer</b> ' +
+      'dans le panneau <i>Installation</i>, à droite. Rien à taper.';
+  } else {
+    const m = $('#tr_model').value;
+    $('#trstate').textContent = (su.modeles[m] || {}).telecharge
+      ? 'Prêt. Tout fonctionne hors ligne.'
+      : `Le modèle « ${m} » sera téléchargé au premier usage (ou par le bouton Télécharger).`;
+  }
+  runLabel();
+}
+
+/* ---------------- démarrage ---------------- */
+document.querySelectorAll('#presets button').forEach(b => b.onclick = () => {
+  applySettings(Object.assign(settings(), PRESETS[b.dataset.p] || {})); save();
+  document.querySelectorAll('#presets button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+});
+SLIDERS.forEach(k => $('#'+k).addEventListener('input', () => { refreshLabels(); save();
+  document.querySelectorAll('#presets button').forEach(b => b.classList.remove('on')); }));
+
+(async () => {
+  const c = await api('/api/config');
+  PRESETS = c.presets;
+  applySettings(Object.assign({}, c.defaults, c.enregistre.settings || {}));
+
+  const T = c.transcription || {};
+  $('#tr_model').innerHTML = Object.entries(T.models || {}).map(([k,m]) =>
+    `<option value="${k}">${k} — ${m.taille}, ${m.vitesse}, qualité ${m.qualite}</option>`).join('');
+  applyTr(Object.assign({}, T.defaults || {}, c.enregistre.transcription || {}));
+  if (T.llm) $('#llmrow').style.display = 'flex';
+  $('#modelhint').textContent = 'Sur un portable sans carte graphique, comptez à peu près la durée ' +
+    'indiquée par rapport à celle de la réunion.';
+
+  ['gate','keep_stereo','hum','ex_listen','ex_transcribe','listen_format','trim_silence',
+   'segment_minutes','tr_language','tr_vocabulary','tr_diarize','tr_max_speakers','tr_llm']
+   .concat(FORMATS.map(f => 'f_'+f)).forEach(id => $('#'+id).addEventListener('change', save));
+  $('#tr_model').addEventListener('change', () => { save(); refreshSetup(); });
+  $('#tr_enabled').addEventListener('change', () => {
+    $('#trbody').style.display = $('#tr_enabled').checked ? 'block' : 'none'; runLabel(); save(); });
+
+  $('#outdir').textContent = c.out_dir;
+  showWatch(c.watch || {});
+  renderSetup(c.setup); updateTrState(c.setup);
+  if (c.setup.tache.running) startSetupPoll();
+
+  $('#env').innerHTML = (c.ffmpeg.startsWith('ok')
+    ? 'Moteur audio détecté.' : `<span style="color:var(--warn)">${c.ffmpeg}</span>`)
+    + '<br>Traitement local, hors ligne. Comptez environ 30 s de calcul pour 10 min d\'audio, '
+    + 'plus la transcription si elle est activée.';
+  renderFiles(); poll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+numpy>=1.23
+scipy>=1.9
+flask>=2.2
+python-docx>=1.1
+# Fournit un binaire ffmpeg si aucun n'est installé sur la machine.
+# Si vous avez déjà ffmpeg (brew, winget, apt), cette ligne est facultative.
+imageio-ffmpeg>=0.4.9
+
+# --- Transcription (optionnelle) -------------------------------------------
+# Installée par Installer_la_transcription.command / .bat, ou à la main :
+#   pip install faster-whisper
+# faster-whisper>=1.0
+#
+# --- Identification des intervenants de qualité supérieure (optionnelle) ----
+# Plus fiable que le repli intégré, mais lourde (~2 Go) et demande un jeton
+# HuggingFace gratuit. Voir la section « Intervenants » du README.
+#   pip install pyannote.audio

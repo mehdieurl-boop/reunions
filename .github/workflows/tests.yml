@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy flask python-docx imageio-ffmpeg
+
+      - name: Vérifier que ffmpeg est disponible
+        run: python -c "from audiotool import ffmpeg_io; print(ffmpeg_io.check_environment())"
+
+      - name: Traitement du signal
+        run: python tests/test_dsp.py
+
+      - name: Transcription, intervenants et livrables
+        run: python tests/test_transcription.py
+
+      - name: Mesure avant / après sur un échantillon bruité
+        run: |
+          python tests/make_sample.py
+          python tests/evaluate.py

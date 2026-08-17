@@ -1,0 +1,70 @@
+name: Retour de test
+description: Vous avez essayé l'outil sur un vrai enregistrement
+labels: ["retour de test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci. **N'envoyez ni audio ni verbatim confidentiel** : décrivez, ne collez pas.
+
+  - type: input
+    id: machine
+    attributes:
+      label: Machine et système
+      placeholder: MacBook Air M2, macOS 15 — ou Windows 11, i5, sans carte graphique
+    validations:
+      required: true
+
+  - type: input
+    id: enregistrement
+    attributes:
+      label: L'enregistrement
+      placeholder: export Zoom, 5 personnes, 47 minutes, un intervenant au téléphone
+    validations:
+      required: true
+
+  - type: dropdown
+    id: modele
+    attributes:
+      label: Modèle de transcription
+      options: ["aucun (nettoyage seul)", "tiny", "base", "small", "medium", "large-v3-turbo", "large-v3"]
+    validations:
+      required: true
+
+  - type: input
+    id: duree
+    attributes:
+      label: Temps de calcul
+      placeholder: 12 min de calcul pour 47 min d'audio
+
+  - type: textarea
+    id: audio
+    attributes:
+      label: Qualité audio obtenue
+      placeholder: |
+        La voix lointaine est-elle devenue intelligible ?
+        Des artefacts : voix métallique, ondulation, débuts de mots coupés ?
+
+  - type: textarea
+    id: transcription
+    attributes:
+      label: Qualité de la transcription
+      placeholder: |
+        Relisible en l'état, ou à reprendre entièrement ?
+        Les noms propres ? Des phrases inventées dans les silences ?
+
+  - type: textarea
+    id: intervenants
+    attributes:
+      label: Intervenants
+      placeholder: |
+        Combien de personnes réellement, combien détectées ?
+        Avez-vous indiqué le nombre à l'avance ?
+
+  - type: textarea
+    id: releve
+    attributes:
+      label: Relevé automatique
+      placeholder: |
+        Combien de décisions et d'actions pertinentes, sur combien de repérées ?
+        Qu'est-ce qui a été manqué ? (la formulation exacte nous intéresse)

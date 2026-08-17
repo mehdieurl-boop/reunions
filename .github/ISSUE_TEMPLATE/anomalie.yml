@@ -1,0 +1,52 @@
+name: Anomalie
+description: Quelque chose ne fonctionne pas
+labels: ["anomalie"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **N'envoyez ni audio ni verbatim confidentiel.** Si le problème dépend du fichier,
+        essayez de le reproduire avec un extrait fabriqué : `python tests/make_dialogue.py`.
+
+  - type: input
+    id: machine
+    attributes:
+      label: Machine et système
+      placeholder: Windows 11, Python 3.12
+    validations:
+      required: true
+
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Ce que vous attendiez, ce qui s'est passé
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduire
+    attributes:
+      label: Comment reproduire
+      placeholder: |
+        1. Déposer un fichier de 40 minutes
+        2. Cocher Transcrire, modèle small
+        3. Cliquer sur Nettoyer et transcrire
+    validations:
+      required: true
+
+  - type: textarea
+    id: messages
+    attributes:
+      label: Messages affichés
+      description: >
+        Le message de la barre de progression, le contenu du panneau Installation, et la
+        fenêtre noire ouverte par le lanceur si elle affiche une erreur.
+      render: text
+
+  - type: checkboxes
+    id: verifs
+    attributes:
+      label: Vérifications
+      options:
+        - label: Les tests passent (`python tests/test_dsp.py`)
+        - label: Le panneau Installation indique que le moteur de transcription est installé

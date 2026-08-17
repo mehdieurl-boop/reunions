@@ -1,0 +1,21 @@
+# environnement Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# sorties de tests et fichiers audio générés
+tests/out/
+tests/*_clean_ref.wav
+tests/dialogue_test*
+nettoyes/
+comptes-rendus/
+
+# réglages locaux (contiennent le jeton HuggingFace)
+reglages.json
+.surveillance.json
+
+# système
+.DS_Store
+Thumbs.db
+desktop.ini
