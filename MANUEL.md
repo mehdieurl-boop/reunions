@@ -102,6 +102,24 @@ graphique NVIDIA, c'est automatiquement 5 à 10 fois plus rapide.
 les noms des participants, les sigles maison et les noms de produits améliore nettement les
 noms propres — c'est là qu'un moteur générique se trompe le plus.
 
+### Vérifier que ça marche chez vous
+
+Dans le panneau **Installation**, la ligne *Vérifier sur cette machine* met le moteur à
+l'épreuve en une minute et rend trois chiffres :
+
+- **la vitesse réelle** sur votre machine — combien de minutes de calcul pour une heure de
+  réunion. C'est ce qui doit guider le choix du modèle, bien plus que les estimations du
+  tableau ci-dessus ;
+- **le taux d'erreur**, mesuré sur trois phrases dont le texte exact est connu, lues par la
+  voix de synthèse de votre système. Sous 12 % c'est très bon, jusqu'à 30 % ça reste
+  relisible, au-delà il faut changer quelque chose ;
+- **les hallucinations** : le moteur écoute 15 secondes de silence bruité et ne devrait
+  produire aucun mot. S'il en invente, montez le débruitage.
+
+Rien n'est envoyé nulle part et aucun fichier de référence n'est embarqué : l'extrait est
+fabriqué sur place. Si votre système n'a pas de voix française installée, la précision n'est
+pas mesurée — le reste l'est quand même, et l'outil vous le dit.
+
 ### Livrables
 
 | Fichier | Contenu |
@@ -210,7 +228,7 @@ comprise), avec moins de 400 Mo de mémoire.
 
 ```bash
 python tests/test_dsp.py            # 14 tests unitaires du traitement du signal
-python tests/test_transcription.py  # 28 tests : intervenants, relevé, livrables
+python tests/test_transcription.py  # 39 tests : transcription, intervenants, livrables
 python tests/make_sample.py         # fabrique une fausse réunion bruitée
 python tests/evaluate.py            # mesure avant/après sur cet échantillon
 ```

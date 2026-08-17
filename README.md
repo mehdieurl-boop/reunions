@@ -73,7 +73,7 @@ proches, captées par le même micro, attendez-vous à moins bien.
 
 ```bash
 python tests/test_dsp.py            # 14 tests du traitement du signal
-python tests/test_transcription.py  # 28 tests : intervenants, relevé, livrables
+python tests/test_transcription.py  # 39 tests : transcription, intervenants, livrables
 python tests/make_sample.py && python tests/evaluate.py
 ```
 
@@ -84,10 +84,16 @@ python tests/make_sample.py && python tests/evaluate.py
 Mesuré et testé : la chaîne audio, l'identification des intervenants, le relevé automatique,
 la génération des livrables, l'interface et le dossier surveillé.
 
-Pas encore éprouvé en conditions réelles : la transcription Whisper elle-même est écrite
-contre l'interface publique de `faster-whisper`, mais n'a pas pu être testée de bout en bout
-dans l'environnement de développement, faute d'accès au téléchargement des modèles. Les
-retours sur ce point sont particulièrement bienvenus — voir [TESTEURS.md](TESTEURS.md).
+La transcription Whisper est écrite contre l'interface publique de `faster-whisper` mais n'a
+pas pu être éprouvée de bout en bout dans l'environnement de développement, faute d'accès au
+téléchargement des modèles. **L'outil sait donc se vérifier lui-même** : le bouton
+*Vérifier sur cette machine* du panneau Installation fabrique un extrait parlé avec la voix
+de synthèse du système, le fait transcrire, et rend le taux d'erreur, la vitesse réelle et le
+nombre de mots inventés sur du silence. Une minute, et vous savez où vous en êtes.
+
+![Panneau d'installation et de vérification](docs/apercu-verification.png)
+
+Les retours sur de vrais enregistrements restent la priorité — voir [TESTEURS.md](TESTEURS.md).
 
 ---
 

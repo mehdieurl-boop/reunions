@@ -31,10 +31,20 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: verification
+    attributes:
+      label: Résultat de « Vérifier sur cette machine »
+      description: Panneau Installation → Vérifier sur cette machine → Lancer.
+      placeholder: |
+        taux d'erreur : 8,3 %
+        vitesse : 1,7x le temps réel (35 min de calcul par heure d'audio)
+        hallucinations : 0 mot sur du silence
+
   - type: input
     id: duree
     attributes:
-      label: Temps de calcul
+      label: Temps de calcul sur votre enregistrement
       placeholder: 12 min de calcul pour 47 min d'audio
 
   - type: textarea

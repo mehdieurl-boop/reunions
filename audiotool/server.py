@@ -131,6 +131,16 @@ def setup_model():
     return jsonify(ok=True)
 
 
+@app.post("/api/setup/selftest")
+def setup_selftest():
+    d = request.json or {}
+    name = d.get("model")
+    if name not in tr.MODELS:
+        return jsonify(error="modèle inconnu"), 400
+    setup_tools.check_transcription(name, d.get("engine") or "faster-whisper")
+    return jsonify(ok=True)
+
+
 @app.post("/api/setup/token")
 def setup_token():
     token = ((request.json or {}).get("token") or "").strip()

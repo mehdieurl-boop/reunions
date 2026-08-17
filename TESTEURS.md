@@ -15,6 +15,16 @@ disent rien de ce que ça donne sur cinq personnes autour d'une table.
 
 Aucune commande à taper. Si vous en tapez une, c'est un bug — signalez-le.
 
+## D'abord : la vérification automatique
+
+Panneau **Installation**, ligne *Vérifier sur cette machine*, bouton **Lancer**. En une minute
+vous obtenez le taux d'erreur, la vitesse réelle sur votre machine et le nombre de mots
+inventés sur du silence.
+
+**Collez ces trois chiffres dans votre retour** : ils rendent tous les retours comparables
+entre machines, et ils disent tout de suite si un mauvais résultat vient du moteur ou de
+l'enregistrement.
+
 ## Le parcours à essayer
 
 1. **Un enregistrement réel**, si possible pas le plus propre de votre collection.

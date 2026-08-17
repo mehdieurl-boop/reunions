@@ -1,5 +1,19 @@
 # Journal des versions
 
+## 1.1.0
+
+**Vérification du moteur sur la machine de l'utilisateur**
+
+- Bouton *Vérifier sur cette machine* dans le panneau Installation.
+- Fabrique un extrait parlé avec la voix de synthèse du système (Windows SAPI, `say` sous
+  macOS, espeak sous Linux) : aucun fichier de référence n'est embarqué.
+- Mesure le taux d'erreur sur les mots (avec distinction substitutions / omissions /
+  insertions), la vitesse réelle en facteur temps réel, et le nombre de mots inventés sur
+  15 secondes de silence bruité.
+- Verdict en clair, avec la conduite à tenir selon le résultat.
+- Dégradation propre si le système n'a pas de voix française : les autres mesures sont
+  quand même rendues.
+
 ## 1.0.0
 
 Première version publiée.
@@ -28,6 +42,6 @@ Première version publiée.
 - Réglages mémorisés sur le disque.
 
 **Vérification**
-- 14 tests du traitement du signal, 28 tests de la chaîne de transcription.
+- 14 tests du traitement du signal, 39 tests de la chaîne de transcription.
 - Mesure avant/après sur un échantillon bruité reproductible.
 - Intégration continue sur macOS, Windows et Linux.

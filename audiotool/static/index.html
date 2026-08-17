@@ -82,6 +82,13 @@
   #log{display:none;background:#1e1e1c;color:#d8d8d2;font:12px/1.45 ui-monospace,SFMono-Regular,
     Menlo,Consolas,monospace;padding:10px 12px;border-radius:8px;max-height:190px;
     overflow:auto;white-space:pre-wrap;margin-top:10px}
+  .verdict{border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-top:10px;
+    background:#fcfcfb;font-size:13px}
+  .verdict.ok{border-color:var(--accent);background:var(--accent-soft)}
+  .verdict.faible{border-color:#e2c4b9;background:var(--warn-soft)}
+  .verdict ul{margin:7px 0 0;padding-left:18px}
+  .verdict li{margin:3px 0}
+  .verdict .cmp{margin-top:9px;font-size:12px;color:var(--muted)}
   .path{font-size:12.5px;color:var(--muted);word-break:break-all;background:#fbfbfa;
     border:1px solid var(--line);border-radius:7px;padding:6px 9px;flex:1;min-width:0}
   dialog{border:1px solid var(--line);border-radius:12px;padding:0;width:min(560px,92vw);
@@ -242,6 +249,7 @@
     <h2>Installation <span id="setupchips"></span></h2>
     <div id="setuplines"></div>
     <div id="log"></div>
+    <div id="verdict"></div>
     <div class="status" id="setupnote"></div>
   </div>
 
@@ -529,9 +537,14 @@ function renderSetup(su, tr){
     su.composants.transcription.installe ? 'Installé' : 'Installer',
     'install-transcription', su.composants.transcription.note));
 
-  if (su.composants.transcription.installe)
+  if (su.composants.transcription.installe){
     lines.push(line(`Modèle « ${model} »`, modelOk, modelOk ? 'Téléchargé' : 'Télécharger',
       'model', `${(su.modeles[model]||{}).taille||''} — à faire une fois, ensuite hors ligne.`));
+    lines.push(`<div class="setup-line"><span class="lbl">Vérifier sur cette machine
+      <div class="hint">Mesure la vitesse réelle, le taux d'erreur et la tendance à inventer
+      du texte. Environ une minute.</div></span>
+      <button class="small" data-setup="selftest">Lancer</button></div>`);
+  }
 
   lines.push(line('Identification avancée (pyannote)', su.composants.intervenants.installe,
     su.composants.intervenants.installe ? 'Installé' : 'Installer',
@@ -549,7 +562,8 @@ function renderSetup(su, tr){
   document.querySelectorAll('[data-setup]').forEach(b => b.onclick = async () => {
     const what = b.dataset.setup;
     b.disabled = true;
-    if (what === 'model') await post('/api/setup/model', {name: $('#tr_model').value});
+    if (what === 'selftest') await post('/api/setup/selftest', {model: $('#tr_model').value});
+    else if (what === 'model') await post('/api/setup/model', {name: $('#tr_model').value});
     else await post('/api/setup/install', {component: what.replace('install-','')});
     startSetupPoll();
   });
@@ -560,6 +574,7 @@ function renderSetup(su, tr){
   const t = su.tache;
   $('#log').style.display = (t.running || (t.log && t.log.length)) ? 'block' : 'none';
   if (t.log && t.log.length) { $('#log').textContent = t.log.join('\n'); $('#log').scrollTop = 1e6; }
+  $('#verdict').innerHTML = t.result ? verdictHtml(t.result) : '';
   $('#setupnote').innerHTML = t.running ? `En cours : ${t.name}… (vous pouvez continuer à travailler)`
     : (t.ok === false
         ? `<span style="color:var(--warn)">Échec : ${t.message}</span><br>`
@@ -567,6 +582,16 @@ function renderSetup(su, tr){
           + 'téléchargements, essayez depuis une autre connexion.'
         : (t.ok ? 'Opération terminée.' : ''));
 }
+function verdictHtml(r){
+  const v = r.verdict || {};
+  const p = r.precision;
+  const cmp = p ? `<div class="cmp"><b>Attendu :</b> ${p.texte_attendu}<br>
+      <b>Obtenu :</b> ${p.texte_obtenu || '(rien)'}</div>` : '';
+  return `<div class="verdict ${v.niveau || ''}">
+    <b>${v.resume || ''}</b> — modèle ${r.modele}
+    <ul>${(v.points || []).map(x => `<li>${x}</li>`).join('')}</ul>${cmp}</div>`;
+}
+
 function line(label, ok, action, key, note){
   return `<div class="setup-line"><span class="lbl">${label}<div class="hint">${note||''}</div></span>
     ${ok ? '<span class="chip ok">✓ ' + action + '</span>'

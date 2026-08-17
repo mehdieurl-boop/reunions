@@ -21,6 +21,7 @@ TASK = {
     "log": deque(maxlen=400),
     "ok": None,
     "message": "",
+    "result": None,      # rapport de la dernière vérification
 }
 _LOCK = threading.Lock()
 
@@ -67,7 +68,8 @@ def status() -> dict:
                  for k, v in tr.MODELS.items()},
         jeton_hf=bool(config.get("hf_token")),
         tache=dict(running=TASK["running"], name=TASK["name"], ok=TASK["ok"],
-                   message=TASK["message"], log=list(TASK["log"])[-40:]),
+                   message=TASK["message"], log=list(TASK["log"])[-40:],
+                   result=TASK["result"]),
     )
 
 
@@ -75,7 +77,7 @@ def _run(name: str, fn) -> None:
     with _LOCK:
         if TASK["running"]:
             return
-        TASK.update(running=True, name=name, ok=None, message="")
+        TASK.update(running=True, name=name, ok=None, message="", result=None)
         TASK["log"].clear()
 
     def worker():
@@ -124,6 +126,16 @@ def install(component: str) -> None:
         _log("Composant installé et détecté.")
 
     _run(p["label"], job)
+
+
+def check_transcription(model: str, engine: str = "faster-whisper") -> None:
+    """Met le moteur à l'épreuve sur cette machine et publie un rapport chiffré."""
+    from . import selftest
+
+    def job():
+        TASK["result"] = selftest.run(model, log=_log, engine=engine)
+
+    _run(f"Vérification du modèle {model}", job)
 
 
 def download_model(name: str) -> None:

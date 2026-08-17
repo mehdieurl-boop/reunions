@@ -149,6 +149,75 @@ with tempfile.TemporaryDirectory() as tmp:
     check("tableaux présents dans le Word", len(doc.tables) >= 2, f"({len(doc.tables)})")
 
 # --------------------------------------------------------------------------- #
+#  Vérification du moteur (autotest)
+# --------------------------------------------------------------------------- #
+
+from audiotool import selftest, transcribe as _tr  # noqa: E402
+
+CAS_WER = [
+    ("bonjour à tous merci", "bonjour à tous merci", 0.0),
+    ("bonjour à tous", "bonjour a tous", 0.0),            # accents ignorés
+    ("bonjour à tous merci", "bonjour tous merci", 0.25),  # une omission
+    ("bonjour à tous", "bonjour à tous les amis", 2 / 3),  # deux insertions
+    ("le client vendredi", "le client mardi", 1 / 3),      # une substitution
+]
+bons = sum(abs(selftest.word_error_rate(r, h)["taux"] - a) < 0.01 for r, h, a in CAS_WER)
+check("taux d'erreur sur les mots", bons == len(CAS_WER), f"({bons}/{len(CAS_WER)})")
+
+d = selftest.word_error_rate("le client vendredi", "le client mardi")
+check("types d'erreur distingués",
+      (d["substitutions"], d["omissions"], d["insertions"]) == (1, 0, 0), f"({d})")
+
+# branche « précision et vitesse » : on simule une voix de synthèse et un moteur
+_vrai_transcribe = _tr.transcribe
+
+
+def _faux_synthese(text, out):
+    selftest.make_silence(Path(out), seconds=12.0)     # peu importe le contenu
+    return True
+
+
+def _faux_moteur(wav, settings, duration=0.0, progress=None):
+    import time as _t
+    _t.sleep(0.05)
+    if "silence" in str(wav):
+        return [], dict(langue="fr", modele=settings.model)
+    texte = selftest.REFERENCE.replace("vendredi", "mardi")   # une erreur volontaire
+    return [_tr.Segment(0.0, 12.0, texte)], dict(langue="fr", modele=settings.model)
+
+
+selftest.synthesize = _faux_synthese
+_tr.transcribe = _faux_moteur
+try:
+    rap = selftest.run("small", log=lambda m: None, engine="mock")
+finally:
+    _tr.transcribe = _vrai_transcribe
+
+check("rapport : précision mesurée", rap["precision"] is not None
+      and 0 < rap["precision"]["taux_erreur"] < 20,
+      f"({rap['precision']['taux_erreur']} %)")
+check("rapport : une substitution repérée", rap["precision"]["substitutions"] == 1)
+check("rapport : vitesse mesurée", rap["vitesse"]["facteur"] > 1,
+      f"({rap['vitesse']['facteur']}x)")
+check("rapport : durée de calcul pour une heure",
+      rap["vitesse"]["minutes_calcul_par_heure_audio"] > 0)
+check("rapport : aucune hallucination sur le silence",
+      rap["hallucinations"]["mots_inventes"] == 0)
+check("rapport : verdict favorable", rap["verdict"]["niveau"] == "ok",
+      f"({rap['verdict']['resume']})")
+
+# et sans voix de synthèse disponible
+selftest.synthesize = lambda text, out: False
+_tr.transcribe = _faux_moteur
+try:
+    rap2 = selftest.run("small", log=lambda m: None, engine="mock")
+finally:
+    _tr.transcribe = _vrai_transcribe
+check("rapport : dégradation propre sans voix système",
+      rap2["precision"] is None and rap2["verdict"]["niveau"] == "partiel")
+
+
+# --------------------------------------------------------------------------- #
 #  Horodatage
 # --------------------------------------------------------------------------- #
 check("horodatage hh:mm:ss", documents.hhmmss(3725) == "01:02:05")
